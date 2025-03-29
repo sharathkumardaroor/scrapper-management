@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Scraper Management System</title>
+  <!-- Bootstrap CSS from CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* Additional styling for macOS-like UI */
+    #scrapedDataList li {
+      cursor: pointer;
+    }
+    #scrapedDataList li.active {
+      background-color: #007aff;
+      color: #fff;
+    }
+  </style>
+</head>
+<body class="p-4">
+  <div class="container">
+    <h1 class="mb-4">Scraper Management System</h1>
+    
+    <!-- Nav Tabs -->
+    <ul class="nav nav-tabs" id="tabMenu" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab" aria-controls="add" aria-selected="true">
+          Add Task
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button" role="tab" aria-controls="list" aria-selected="false">
+          Task List
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button" role="tab" aria-controls="data" aria-selected="false">
+          Scraped Data
+        </button>
+      </li>
+    </ul>
+    
+    <!-- Tab Panes -->
+    <div class="tab-content" id="tabContent">
+      <!-- Add Task Tab -->
+      <div class="tab-pane fade show active" id="add" role="tabpanel" aria-labelledby="add-tab">
+        <h2>Add a New Task</h2>
+        <form method="post" action="/create-task">
+          <div class="mb-3">
+            <label for="url" class="form-label">URL:</label>
+            <input type="text" name="url" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Create Task</button>
+        </form>
+      </div>
+      
+      <!-- Task List Tab -->
+      <div class="tab-pane fade" id="list" role="tabpanel" aria-labelledby="list-tab">
+        <h2>Task List</h2>
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>URL</th>
+              <th>Status</th>
+              <th>Status Code</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="taskListTableBody">
+            {% for task in tasks %}
+            <tr>
+              <td>{{ task.id }}</td>
+              <td>{{ task.url }}</td>
+              <td>{{ task.status }}</td>
+              <td>{{ task.status_code if task.status_code else "N/A" }}</td>
+              <td>
+                {% if task.status == "pending" %}
+                <form method="post" action="/start-task/{{ task.id }}">
+                  <button type="submit" class="btn btn-primary btn-sm">Start</button>
+                </form>
+                {% else %}
+                <em>N/A</em>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Scraped Data Tab -->
+      <div class="tab-pane fade" id="data" role="tabpanel" aria-labelledby="data-tab">
+        <h2>Scraped Data</h2>
+        <div class="row">
+          <!-- Left Pane: List of tasks with scraped data -->
+          <div class="col-md-4">
+            <h4>Tasks</h4>
+            <ul class="list-group" id="scrapedDataList">
+              {% for task in tasks %}
+                {% if task.raw_html and task.raw_html|trim %}
+                <li class="list-group-item" data-task-id="{{ task.id }}" data-raw="{{ task.raw_html | e }}">
+                  Task {{ task.id }} - {{ task.url }} ({{ task.status }})
+                </li>
+                {% endif %}
+              {% endfor %}
+            </ul>
+          </div>
+          <!-- Right Pane: Raw HTML Content -->
+          <div class="col-md-8">
+            <h4>Raw HTML Content</h4>
+            <div id="rawHtmlContent">
+              <pre id="rawHtmlPre" style="max-height: 400px; overflow:auto;">Select a task to view its content.</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {% if error %}
+      <div class="alert alert-danger mt-3">{{ error }}</div>
+    {% endif %}
+  </div>
+  
+  <!-- Bootstrap Bundle JS (includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- JavaScript for auto-updating and interaction -->
+  <script>
+    async function updateTaskList() {
+      try {
+        const response = await fetch("/api/tasks");
+        const tasks = await response.json();
+        console.log("Updated tasks:", tasks); // Debug: inspect tasks in console
+        
+        // Update Task List Table
+        let tbodyHTML = "";
+        tasks.forEach(task => {
+          tbodyHTML += `
+            <tr>
+              <td>${task.id}</td>
+              <td>${task.url}</td>
+              <td>${task.status}</td>
+              <td>${task.status_code ? task.status_code : "N/A"}</td>
+              <td>${task.status === "pending" 
+                ? `<form method="post" action="/start-task/${task.id}">
+                     <button type="submit" class="btn btn-primary btn-sm">Start</button>
+                   </form>`
+                : `<em>N/A</em>`}
+              </td>
+            </tr>
+          `;
+        });
+        document.getElementById("taskListTableBody").innerHTML = tbodyHTML;
+      } catch (error) {
+        console.error("Error updating task list:", error);
+      }
+    }
+    
+    async function updateScrapedDataPane() {
+      try {
+        const response = await fetch("/api/tasks");
+        const tasks = await response.json();
+        console.log("Scraped Data Update:", tasks);
+        
+        // Save currently active task id, if any.
+        const activeElem = document.querySelector("#scrapedDataList li.active");
+        const activeTaskId = activeElem ? activeElem.getAttribute("data-task-id") : null;
+        
+        // Build new list HTML for left pane
+        let listHTML = "";
+        tasks.forEach(task => {
+          if(task.raw_html && String(task.raw_html).trim() !== "") {
+            // Preserve active class if this task was selected before.
+            const isActive = (activeTaskId && activeTaskId === String(task.id)) ? " active" : "";
+            listHTML += `<li class="list-group-item${isActive}" data-task-id="${task.id}" data-raw="${encodeURIComponent(task.raw_html)}">
+                Task ${task.id} - ${task.url} (${task.status})
+              </li>`;
+          }
+        });
+        if(listHTML === "") {
+          listHTML = "<li class='list-group-item'>No scraped data available.</li>";
+        }
+        document.getElementById("scrapedDataList").innerHTML = listHTML;
+        
+        // Add click events to list items
+        const listItems = document.querySelectorAll("#scrapedDataList li[data-task-id]");
+        listItems.forEach(item => {
+          item.addEventListener("click", () => {
+            listItems.forEach(i => i.classList.remove("active"));
+            item.classList.add("active");
+            const rawHtml = decodeURIComponent(item.getAttribute("data-raw"));
+            document.getElementById("rawHtmlPre").textContent = rawHtml;
+          });
+        });
+        
+        // If no item is active, auto-select the first item.
+        if(listItems.length > 0 && !document.querySelector("#scrapedDataList li.active")) {
+          listItems[0].classList.add("active");
+          const rawHtml = decodeURIComponent(listItems[0].getAttribute("data-raw"));
+          document.getElementById("rawHtmlPre").textContent = rawHtml;
+        }
+      } catch (error) {
+        console.error("Error updating scraped data pane:", error);
+      }
+    }
+    
+    // Poll every 5 seconds
+    setInterval(() => {
+      updateTaskList();
+      updateScrapedDataPane();
+    }, 5000);
+    
+    // Initial update
+    updateTaskList();
+    updateScrapedDataPane();
+  </script>
+</body>
+</html>
