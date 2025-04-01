@@ -1,141 +1,98 @@
-/* Use system fonts to mimic macOS */
+:root {
+  --primary: #2563eb;
+  --success: #16a34a;
+  --warning: #ca8a04;
+  --danger: #dc2626;
+  --bg: #f8fafc;
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    background-color: #f5f5f7;
-    color: #1c1c1e;
-    margin: 0;
-    padding: 20px;
-  }
-  
-  /* Container styling for a centered, card-like look */
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-  }
-  
-  /* Headings */
-  h1, h2 {
-    font-weight: 600;
-    color: #1c1c1e;
-    margin-bottom: 20px;
-  }
-  
-  /* Nav Tabs */
-  .nav-tabs {
-    border-bottom: none;
-    margin-bottom: 20px;
-  }
-  
-  .nav-tabs .nav-link {
-    border: none;
-    border-bottom: 3px solid transparent;
-    border-radius: 0;
-    color: #636366;
-    padding: 10px 20px;
-    background: transparent;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  
-  .nav-tabs .nav-link.active {
-    border-color: #007aff;
-    color: #007aff;
-    font-weight: 500;
-  }
-  
-  /* Tab Content */
-  .tab-content {
-    margin-top: 10px;
-  }
-  
-  /* Form Controls */
-  .form-control {
-    border: 1px solid #d1d1d6;
-    border-radius: 8px;
-    padding: 8px 12px;
-    background-color: #fff;
-  }
-  
-  /* Buttons */
-  .btn-primary {
-    background-color: #007aff;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 16px;
-    color: #fff;
-    transition: background-color 0.2s;
-  }
-  
-  .btn-primary:hover {
-    background-color: #0051c7;
-  }
-  
-  /* Table styling */
-  .table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 10px;
-  }
-  
-  .table th {
-    text-align: left;
-    padding: 10px;
-    color: #636366;
-    font-size: 14px;
-  }
-  
-  .table td {
-    background-color: #fff;
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Accordion for scraped data */
-  .accordion-item {
-    border: none;
-    background-color: transparent;
-  }
-  
-  .accordion-button {
-    background-color: #fff;
-    border: 1px solid #d1d1d6;
-    border-radius: 8px;
-    color: #1c1c1e;
-    padding: 10px 16px;
-    font-weight: 500;
-    transition: background-color 0.2s, border-color 0.2s;
-  }
-  
-  .accordion-button.collapsed {
-    background-color: #f5f5f7;
-  }
-  
-  .accordion-body {
-    background-color: #fff;
-    border: 1px solid #d1d1d6;
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-    padding: 10px;
-  }
-  
-  /* Preformatted text */
-  pre {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    margin: 0;
-  }
-  
-  /* Alerts */
-  .alert {
-    margin-top: 20px;
-    border-radius: 8px;
-    padding: 10px 16px;
-    background-color: #ff3b30;
-    color: #fff;
-  }
-  
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: #1e293b;
+  margin: 20px; /* Added 20px border around entire page */
+  height: calc(100vh - 40px); /* Account for top/bottom margins */
+}
+
+.dashboard-header {
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 1rem;
+  margin: -20px -20px 20px -20px; /* Expand beyond container padding */
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  height: 100%;
+}
+
+.tab-content {
+  height: calc(100% - 180px); /* Adjust height for full page coverage */
+}
+
+#tasks, #data {
+  height: 100%;
+}
+
+.card {
+  height: 100%;
+  border: none;
+  background-color: transparent;
+}
+
+.card-body {
+  padding: 0;
+  height: calc(100% - 60px); /* Account for card header */
+}
+
+.list-group-flush {
+  height: 100%;
+  overflow: auto;
+}
+
+#rawHtmlPre {
+  height: calc(100% - 40px);
+}
+
+.modal-content {
+  border-radius: 12px;
+  margin: 20px; /* Add border around modal */
+}
+
+/* Keep the rest of the previous styles and add: */
+
+.full-height {
+  height: 100%;
+}
+
+.no-overflow {
+  overflow: hidden;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.content-area {
+  height: calc(100% - 60px); /* Account for header */
+  overflow: hidden;
+}
