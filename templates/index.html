@@ -2,217 +2,220 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Scraper Management System</title>
-  <!-- Bootstrap CSS from CDN -->
+  <title>Scraper Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/static/style.css">
-  <style>
-    /* Additional styling for macOS-like UI */
-    #scrapedDataList li {
-      cursor: pointer;
-    }
-    #scrapedDataList li.active {
-      background-color: #007aff;
-      color: #fff;
-    }
-  </style>
 </head>
-<body class="p-4">
-  <div class="container">
-    <h1 class="mb-4">Scraper Management System</h1>
-    
-    <!-- Nav Tabs -->
-    <ul class="nav nav-tabs" id="tabMenu" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="add-tab" data-bs-toggle="tab" data-bs-target="#add" type="button" role="tab" aria-controls="add" aria-selected="true">
-          Add Task
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button" role="tab" aria-controls="list" aria-selected="false">
-          Task List
-        </button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button" role="tab" aria-controls="data" aria-selected="false">
-          Scraped Data
-        </button>
-      </li>
-    </ul>
-    
-    <!-- Tab Panes -->
-    <div class="tab-content" id="tabContent">
-      <!-- Add Task Tab -->
-      <div class="tab-pane fade show active" id="add" role="tabpanel" aria-labelledby="add-tab">
-        <h2>Add a New Task</h2>
-        <form method="post" action="/create-task">
-          <div class="mb-3">
-            <label for="url" class="form-label">URL:</label>
-            <input type="text" name="url" class="form-control" required>
-          </div>
-          <button type="submit" class="btn btn-primary">Create Task</button>
-        </form>
+<body class="no-overflow">
+  <div class="dashboard-grid">
+    <header class="dashboard-header">
+      <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+          <h1 class="h3 mb-0">📊 Scraper Dashboard</h1>
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+            <i class="bi bi-plus-lg"></i> Add URLs
+          </button>
+        </div>
       </div>
-      
-      <!-- Task List Tab -->
-      <div class="tab-pane fade" id="list" role="tabpanel" aria-labelledby="list-tab">
-        <h2>Task List</h2>
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>URL</th>
-              <th>Status</th>
-              <th>Status Code</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="taskListTableBody">
-            {% for task in tasks %}
-            <tr>
-              <td>{{ task.id }}</td>
-              <td>{{ task.url }}</td>
-              <td>{{ task.status }}</td>
-              <td>{{ task.status_code if task.status_code else "N/A" }}</td>
-              <td>
-                {% if task.status == "pending" %}
-                <form method="post" action="/start-task/{{ task.id }}">
-                  <button type="submit" class="btn btn-primary btn-sm">Start</button>
-                </form>
-                {% else %}
-                <em>N/A</em>
-                {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      
-      <!-- Scraped Data Tab -->
-      <div class="tab-pane fade" id="data" role="tabpanel" aria-labelledby="data-tab">
-        <h2>Scraped Data</h2>
-        <div class="row">
-          <!-- Left Pane: List of tasks with scraped data -->
-          <div class="col-md-4">
-            <h4>Tasks</h4>
-            <ul class="list-group" id="scrapedDataList">
-              {% for task in tasks %}
-                {% if task.raw_html and task.raw_html|trim %}
-                <li class="list-group-item" data-task-id="{{ task.id }}" data-raw="{{ task.raw_html | e }}">
-                  Task {{ task.id }} - {{ task.url }} ({{ task.status }})
-                </li>
-                {% endif %}
-              {% endfor %}
-            </ul>
+    </header>
+
+    <div class="container-fluid content-area">
+      <!-- Stats Row -->
+      <div class="stats-row row g-4 mb-4">
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="text-secondary mb-1">Total Tasks</div>
+            <div class="h3" id="totalTasks">0</div>
           </div>
-          <!-- Right Pane: Raw HTML Content -->
-          <div class="col-md-8">
-            <h4>Raw HTML Content</h4>
-            <div id="rawHtmlContent">
-              <pre id="rawHtmlPre" style="max-height: 400px; overflow:auto;">Select a task to view its content.</pre>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="text-secondary mb-1">Completed</div>
+            <div class="h3 text-success" id="completedTasks">0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="text-secondary mb-1">Running</div>
+            <div class="h3 text-warning" id="runningTasks">0</div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="stat-card">
+            <div class="text-secondary mb-1">Failed</div>
+            <div class="h3 text-danger" id="failedTasks">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nav Tabs -->
+      <ul class="nav nav-tabs mb-4" id="tabMenu" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button">
+            <i class="bi bi-list-task"></i> Recent Tasks
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button">
+            <i class="bi bi-database"></i> Scraped Data
+          </button>
+        </li>
+      </ul>
+
+      <!-- Tab Content -->
+      <div class="tab-content full-height">
+        <!-- Tasks Tab -->
+        <div class="tab-pane fade show active full-height" id="tasks">
+          <div class="card border-0 shadow full-height">
+            <div class="card-header bg-white">
+              <h5 class="mb-0">Active Tasks</h5>
+            </div>
+            <div class="card-body p-0">
+              <div class="list-group list-group-flush" id="taskList"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scraped Data Tab -->
+        <div class="tab-pane fade full-height" id="data">
+          <div class="row full-height">
+            <div class="col-md-4 full-height">
+              <div class="card border-0 shadow full-height">
+                <div class="card-header bg-white">
+                  <h5 class="mb-0">Tasks with Data</h5>
+                </div>
+                <div class="card-body p-0">
+                  <div class="list-group list-group-flush" id="scrapedDataList"></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-8 full-height">
+              <div class="card border-0 shadow full-height">
+                <div class="card-header bg-white">
+                  <h5 class="mb-0">Raw Content</h5>
+                </div>
+                <div class="card-body">
+                  <pre id="rawHtmlPre">Select a task to view scraped content</pre>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-    
-    {% if error %}
-      <div class="alert alert-danger mt-3">{{ error }}</div>
-    {% endif %}
   </div>
-  
-  <!-- Bootstrap Bundle JS (includes Popper) -->
+
+  <!-- Add Task Modal -->
+  <div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Add URLs to Scrape</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form method="post" action="/create-tasks" enctype="multipart/form-data">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Enter URLs (one per line)</label>
+              <textarea name="bulk_urls" class="form-control" rows="4" 
+                        placeholder="https://example.com\nhttps://example.org"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Or upload file</label>
+              <input type="file" name="bulk_file" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Start Scraping</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- JavaScript for auto-updating and interaction -->
   <script>
-    async function updateTaskList() {
+    let selectedTaskId = null;
+
+    async function updateDashboard() {
       try {
         const response = await fetch("/api/tasks");
         const tasks = await response.json();
-        console.log("Updated tasks:", tasks); // Debug: inspect tasks in console
-        
-        // Update Task List Table
-        let tbodyHTML = "";
-        tasks.forEach(task => {
-          tbodyHTML += `
-            <tr>
-              <td>${task.id}</td>
-              <td>${task.url}</td>
-              <td>${task.status}</td>
-              <td>${task.status_code ? task.status_code : "N/A"}</td>
-              <td>${task.status === "pending" 
-                ? `<form method="post" action="/start-task/${task.id}">
-                     <button type="submit" class="btn btn-primary btn-sm">Start</button>
-                   </form>`
-                : `<em>N/A</em>`}
-              </td>
-            </tr>
-          `;
-        });
-        document.getElementById("taskListTableBody").innerHTML = tbodyHTML;
+
+        // Update stats
+        document.getElementById('totalTasks').textContent = tasks.length;
+        document.getElementById('completedTasks').textContent = tasks.filter(t => t.status === 'completed').length;
+        document.getElementById('runningTasks').textContent = tasks.filter(t => t.status === 'running').length;
+        document.getElementById('failedTasks').textContent = tasks.filter(t => t.status === 'failed').length;
+
+        // Update task list
+        const taskList = document.getElementById('taskList');
+        taskList.innerHTML = tasks.map(task => `
+          <div class="list-group-item task-card ${task.status}">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <span class="status-badge bg-${task.status}">${task.status}</span>
+                  <small class="text-muted">${new Date(task.created_at).toLocaleString()}</small>
+                </div>
+                <div class="text-break">${task.url}</div>
+              </div>
+              ${task.status_code ? `<span class="badge bg-secondary">${task.status_code}</span>` : ''}
+            </div>
+          </div>
+        `).join('');
+
+        // Update Scraped Data List
+        const scrapedList = document.getElementById('scrapedDataList');
+        const scrapedTasks = tasks.filter(t => t.raw_html && t.raw_html.trim() !== '');
+        scrapedList.innerHTML = scrapedTasks.map(task => `
+          <div class="list-group-item ${task.id === selectedTaskId ? 'active' : ''}" 
+               data-task-id="${task.id}"
+               onclick="showScrapedContent('${encodeURIComponent(task.raw_html).replace(/'/g, "\\'")}', ${task.id})">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="badge bg-primary me-2">#${task.id}</span>
+                ${task.url}
+              </div>
+              <small class="text-muted">${task.status}</small>
+            </div>
+          </div>
+        `).join('');
+
       } catch (error) {
-        console.error("Error updating task list:", error);
+        console.error("Dashboard update error:", error);
       }
     }
-    
-    async function updateScrapedDataPane() {
+
+    function showScrapedContent(content, taskId) {
       try {
-        const response = await fetch("/api/tasks");
-        const tasks = await response.json();
-        console.log("Scraped Data Update:", tasks);
+        // Decode content safely
+        const decodedContent = decodeURIComponent(content.replace(/\+/g, ' '));
         
-        // Save currently active task id, if any.
-        const activeElem = document.querySelector("#scrapedDataList li.active");
-        const activeTaskId = activeElem ? activeElem.getAttribute("data-task-id") : null;
+        // Update displayed content
+        document.getElementById('rawHtmlPre').textContent = decodedContent;
         
-        // Build new list HTML for left pane
-        let listHTML = "";
-        tasks.forEach(task => {
-          if(task.raw_html && String(task.raw_html).trim() !== "") {
-            // Preserve active class if this task was selected before.
-            const isActive = (activeTaskId && activeTaskId === String(task.id)) ? " active" : "";
-            listHTML += `<li class="list-group-item${isActive}" data-task-id="${task.id}" data-raw="${encodeURIComponent(task.raw_html)}">
-                Task ${task.id} - ${task.url} (${task.status})
-              </li>`;
-          }
-        });
-        if(listHTML === "") {
-          listHTML = "<li class='list-group-item'>No scraped data available.</li>";
-        }
-        document.getElementById("scrapedDataList").innerHTML = listHTML;
-        
-        // Add click events to list items
-        const listItems = document.querySelectorAll("#scrapedDataList li[data-task-id]");
-        listItems.forEach(item => {
-          item.addEventListener("click", () => {
-            listItems.forEach(i => i.classList.remove("active"));
-            item.classList.add("active");
-            const rawHtml = decodeURIComponent(item.getAttribute("data-raw"));
-            document.getElementById("rawHtmlPre").textContent = rawHtml;
-          });
+        // Update active state
+        document.querySelectorAll('#scrapedDataList .list-group-item').forEach(item => {
+            item.classList.remove('active');
+            const itemTaskId = parseInt(item.getAttribute('data-task-id'));
+            if (itemTaskId === taskId) {
+                item.classList.add('active');
+            }
         });
         
-        // If no item is active, auto-select the first item.
-        if(listItems.length > 0 && !document.querySelector("#scrapedDataList li.active")) {
-          listItems[0].classList.add("active");
-          const rawHtml = decodeURIComponent(listItems[0].getAttribute("data-raw"));
-          document.getElementById("rawHtmlPre").textContent = rawHtml;
-        }
+        // Update the selected task ID
+        selectedTaskId = taskId;
       } catch (error) {
-        console.error("Error updating scraped data pane:", error);
+        console.error('Error showing content:', error);
       }
     }
-    
-    // Poll every 5 seconds
-    setInterval(() => {
-      updateTaskList();
-      updateScrapedDataPane();
-    }, 5000);
-    
-    // Initial update
-    updateTaskList();
-    updateScrapedDataPane();
+
+    // Update every 3 seconds
+    setInterval(updateDashboard, 3000);
+    updateDashboard();
   </script>
 </body>
 </html>
