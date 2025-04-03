@@ -1,5 +1,5 @@
 from fastapi import FastAPI, BackgroundTasks, HTTPException, Request, Form, UploadFile, File, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -49,6 +49,10 @@ class TaskOut(BaseModel):
     class Config:
         orm_mode = True
 
+class BulkTaskResponse(BaseModel):
+    count: int
+    message: str
+
 # Dependency
 def get_db():
     db = SessionLocal()
@@ -87,7 +91,7 @@ def run_scraper_db(task_id: int):
 # API Endpoints
 @app.get("/api/tasks", response_model=List[TaskOut])
 def list_tasks_api(db: Session = Depends(get_db)):
-    return db.query(Webpage).all()
+    return db.query(Webpage).order_by(Webpage.created_at.desc()).all()
 
 @app.post("/api/tasks", response_model=TaskOut)
 def create_task_api(task_in: TaskInput, db: Session = Depends(get_db)):
@@ -110,35 +114,36 @@ def read_root(request: Request, db: Session = Depends(get_db)):
 async def create_tasks(
     request: Request,
     background_tasks: BackgroundTasks,
-    url: Optional[str] = Form(None),
     bulk_file: Optional[UploadFile] = File(None),
     bulk_urls: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     urls = []
     
-    # Process single URL
-    if url and url.startswith("http"):
-        urls.append(url.strip())
-    
     # Process bulk file
-    if bulk_file:
+    if bulk_file and bulk_file.filename:
         try:
             content = await bulk_file.read()
             text = content.decode().strip()
-            urls += [u.strip() for u in re.split(r'[\n,]', text) if u.strip().startswith("http")]
+            urls += [u.strip() for u in re.split(r'[\n,]', text) if u.strip().startswith(("http://", "https://"))]
         except Exception as e:
-            return handle_error(request, db, f"File error: {str(e)}")
+            return JSONResponse(
+                status_code=400,
+                content={"message": f"File error: {str(e)}", "count": 0}
+            )
     
     # Process bulk URLs textarea
     if bulk_urls:
-        urls += [u.strip() for u in bulk_urls.split(',') if u.strip().startswith("http")]
+        urls += [u.strip() for u in bulk_urls.split('\n') if u.strip().startswith(("http://", "https://"))]
     
     # Deduplicate
     urls = list(set(urls))
     
     if not urls:
-        return handle_error(request, db, "No valid URLs provided")
+        return JSONResponse(
+            status_code=400,
+            content={"message": "No valid URLs provided", "count": 0}
+        )
     
     # Create tasks
     new_count = 0
@@ -153,17 +158,27 @@ async def create_tasks(
             new_count += 1
     
     if new_count == 0:
-        return handle_error(request, db, "All URLs already exist in the system")
+        return JSONResponse(
+            status_code=200,
+            content={"message": "All URLs already exist in the system", "count": 0}
+        )
     
-    return RedirectResponse(url="/", status_code=303)
+    return JSONResponse(
+        status_code=200,
+        content={"message": f"Successfully added {new_count} URLs to the queue", "count": new_count}
+    )
 
-def handle_error(request: Request, db: Session, error: str):
-    tasks = db.query(Webpage).all()
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    if request.headers.get("accept") == "application/json":
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"message": exc.detail}
+        )
     return templates.TemplateResponse("index.html", {
         "request": request,
-        "tasks": tasks,
-        "error": error
-    })
+        "error": exc.detail
+    }, status_code=exc.status_code)
 
 if __name__ == "__main__":
     import uvicorn
