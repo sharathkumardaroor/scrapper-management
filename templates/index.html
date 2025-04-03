@@ -5,99 +5,348 @@
   <title>Scraper Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link rel="stylesheet" href="/static/style.css">
+  <!-- SweetAlert2 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --success-color: #4cc9f0;
+      --warning-color: #f8961e;
+      --danger-color: #f94144;
+      --light-bg: #f8f9fa;
+      --dark-bg: #212529;
+      --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+    }
+    
+    .dashboard-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .dashboard-header {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--card-shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: var(--card-shadow);
+      transition: var(--transition);
+      height: 100%;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-card .h3 {
+      font-weight: 700;
+      margin-top: 10px;
+    }
+    
+    .nav-tabs {
+      border-bottom: 2px solid #dee2e6;
+      margin-bottom: 20px;
+    }
+    
+    .nav-tabs .nav-link {
+      border: none;
+      color: #6c757d;
+      font-weight: 600;
+      padding: 12px 20px;
+      transition: var(--transition);
+    }
+    
+    .nav-tabs .nav-link.active {
+      color: var(--primary-color);
+      border-bottom: 3px solid var(--primary-color);
+      background: transparent;
+    }
+    
+    .nav-tabs .nav-link:hover:not(.active) {
+      color: var(--secondary-color);
+    }
+    
+    .card {
+      border: none;
+      border-radius: 10px;
+      box-shadow: var(--card-shadow);
+      transition: var(--transition);
+    }
+    
+    .card:hover {
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card-header {
+      background: white;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 10px 10px 0 0 !important;
+      padding: 15px 20px;
+      font-weight: 600;
+    }
+    
+    .list-group-item {
+      border: none;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 15px 20px;
+      transition: var(--transition);
+    }
+    
+    .list-group-item:hover {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    .list-group-item.active {
+      background-color: rgba(67, 97, 238, 0.1);
+      color: var(--primary-color);
+      border-left: 3px solid var(--primary-color);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+    
+    .bg-pending {
+      background-color: #6c757d;
+      color: white;
+    }
+    
+    .bg-running {
+      background-color: var(--warning-color);
+      color: white;
+    }
+    
+    .bg-completed {
+      background-color: #2a9d8f;
+      color: white;
+    }
+    
+    .bg-failed {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    
+    .task-card {
+      transition: var(--transition);
+    }
+    
+    .task-card:hover {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--secondary-color);
+      border-color: var(--secondary-color);
+    }
+    
+    #rawHtmlPre {
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      padding: 15px;
+      max-height: 70vh;
+      overflow-y: auto;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    
+    .full-height {
+      height: calc(100% - 20px);
+    }
+    
+    .tab-content {
+      padding-top: 10px;
+    }
+    
+    .modal-content {
+      border: none;
+      border-radius: 10px;
+    }
+    
+    .modal-header {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .text-break {
+      word-break: break-word;
+    }
+    
+    /* Animation for status changes */
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+    
+    .pulse {
+      animation: pulse 0.5s ease;
+    }
+  </style>
 </head>
-<body class="no-overflow">
-  <div class="dashboard-grid">
+<body>
+  <div class="dashboard-container">
     <header class="dashboard-header">
-      <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center">
-          <h1 class="h3 mb-0">📊 Scraper Dashboard</h1>
-          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
-            <i class="bi bi-plus-lg"></i> Add URLs
-          </button>
-        </div>
+      <div>
+        <h1 class="h3 mb-0"><i class="bi bi-graph-up"></i> Scraper Dashboard</h1>
+        <p class="text-muted mb-0">Monitor your web scraping tasks in real-time</p>
       </div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+        <i class="bi bi-plus-lg"></i> Add URLs
+      </button>
     </header>
 
-    <div class="container-fluid content-area">
-      <!-- Stats Row -->
-      <div class="stats-row row g-4 mb-4">
-        <div class="col-md-3">
-          <div class="stat-card">
-            <div class="text-secondary mb-1">Total Tasks</div>
-            <div class="h3" id="totalTasks">0</div>
+    <!-- Stats Row -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted mb-1">Total Tasks</div>
+              <div class="h3" id="totalTasks">0</div>
+            </div>
+            <i class="bi bi-collection text-primary" style="font-size: 2rem;"></i>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <div class="text-secondary mb-1">Completed</div>
-            <div class="h3 text-success" id="completedTasks">0</div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted mb-1">Completed</div>
+              <div class="h3 text-success" id="completedTasks">0</div>
+            </div>
+            <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <div class="text-secondary mb-1">Running</div>
-            <div class="h3 text-warning" id="runningTasks">0</div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted mb-1">Running</div>
+              <div class="h3 text-warning" id="runningTasks">0</div>
+            </div>
+            <i class="bi bi-arrow-repeat text-warning" style="font-size: 2rem;"></i>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="stat-card">
-            <div class="text-secondary mb-1">Failed</div>
-            <div class="h3 text-danger" id="failedTasks">0</div>
+      </div>
+      <div class="col-md-3">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-muted mb-1">Failed</div>
+              <div class="h3 text-danger" id="failedTasks">0</div>
+            </div>
+            <i class="bi bi-exclamation-triangle text-danger" style="font-size: 2rem;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nav Tabs -->
+    <ul class="nav nav-tabs" id="tabMenu" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button">
+          <i class="bi bi-list-task"></i> Recent Tasks
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button">
+          <i class="bi bi-database"></i> Scraped Data
+        </button>
+      </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Tasks Tab -->
+      <div class="tab-pane fade show active" id="tasks">
+        <div class="card">
+          <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">Active Tasks</h5>
+              <button class="btn btn-sm btn-outline-secondary" onclick="updateDashboard()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Status</th>
+                    <th>URL</th>
+                    <th>Created</th>
+                    <th>Response</th>
+                  </tr>
+                </thead>
+                <tbody id="taskList">
+                  <!-- Tasks will be loaded here -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Nav Tabs -->
-      <ul class="nav nav-tabs mb-4" id="tabMenu" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button">
-            <i class="bi bi-list-task"></i> Recent Tasks
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#data" type="button">
-            <i class="bi bi-database"></i> Scraped Data
-          </button>
-        </li>
-      </ul>
-
-      <!-- Tab Content -->
-      <div class="tab-content full-height">
-        <!-- Tasks Tab -->
-        <div class="tab-pane fade show active full-height" id="tasks">
-          <div class="card border-0 shadow full-height">
-            <div class="card-header bg-white">
-              <h5 class="mb-0">Active Tasks</h5>
-            </div>
-            <div class="card-body p-0">
-              <div class="list-group list-group-flush" id="taskList"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Scraped Data Tab -->
-        <div class="tab-pane fade full-height" id="data">
-          <div class="row full-height">
-            <div class="col-md-4 full-height">
-              <div class="card border-0 shadow full-height">
-                <div class="card-header bg-white">
-                  <h5 class="mb-0">Tasks with Data</h5>
-                </div>
-                <div class="card-body p-0">
-                  <div class="list-group list-group-flush" id="scrapedDataList"></div>
+      <!-- Scraped Data Tab -->
+      <div class="tab-pane fade" id="data">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="card h-100">
+              <div class="card-header">
+                <h5 class="mb-0">Tasks with Data</h5>
+              </div>
+              <div class="card-body p-0">
+                <div class="list-group list-group-flush" id="scrapedDataList" style="max-height: 70vh; overflow-y: auto;">
+                  <!-- Scraped data list will be loaded here -->
                 </div>
               </div>
             </div>
-            <div class="col-md-8 full-height">
-              <div class="card border-0 shadow full-height">
-                <div class="card-header bg-white">
+          </div>
+          <div class="col-md-8">
+            <div class="card h-100">
+              <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
                   <h5 class="mb-0">Raw Content</h5>
+                  <div>
+                    <button class="btn btn-sm btn-outline-primary" id="copyRawContent">
+                      <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                  </div>
                 </div>
-                <div class="card-body">
-                  <pre id="rawHtmlPre">Select a task to view scraped content</pre>
-                </div>
+              </div>
+              <div class="card-body">
+                <pre id="rawHtmlPre" class="p-3 bg-light rounded">Select a task to view scraped content</pre>
               </div>
             </div>
           </div>
@@ -108,27 +357,30 @@
 
   <!-- Add Task Modal -->
   <div class="modal fade" id="addTaskModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Add URLs to Scrape</h5>
+          <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Add URLs to Scrape</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
-        <form method="post" action="/create-tasks" enctype="multipart/form-data">
+        <form id="taskForm" method="post" action="/create-tasks" enctype="multipart/form-data">
           <div class="modal-body">
             <div class="mb-3">
-              <label class="form-label">Enter URLs (one per line)</label>
-              <textarea name="bulk_urls" class="form-control" rows="4" 
-                        placeholder="https://example.com\nhttps://example.org"></textarea>
+              <label class="form-label">Enter URLs (one per line or comma separated)</label>
+              <textarea name="bulk_urls" class="form-control" rows="6" 
+                        placeholder="https://example.com&#10;https://example.org&#10;https://another-example.com"></textarea>
             </div>
             <div class="mb-3">
-              <label class="form-label">Or upload file</label>
-              <input type="file" name="bulk_file" class="form-control">
+              <label class="form-label">Or upload a text file with URLs</label>
+              <input type="file" name="bulk_file" class="form-control" accept=".txt,.csv">
+              <small class="text-muted">Supported formats: .txt, .csv (one URL per line)</small>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Start Scraping</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-play-fill"></i> Start Scraping
+            </button>
           </div>
         </form>
       </div>
@@ -136,35 +388,137 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
     let selectedTaskId = null;
+
+    // Initialize Toast for notifications
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer)
+        toast.addEventListener('mouseleave', Swal.resumeTimer)
+      }
+    });
+
+    // Copy raw content button
+    document.getElementById('copyRawContent').addEventListener('click', function() {
+      const content = document.getElementById('rawHtmlPre').textContent;
+      navigator.clipboard.writeText(content).then(() => {
+        Toast.fire({
+          icon: 'success',
+          title: 'Content copied to clipboard!'
+        });
+      }).catch(err => {
+        Toast.fire({
+          icon: 'error',
+          title: 'Failed to copy content'
+        });
+      });
+    });
+
+    // Form submission with SweetAlert
+    document.getElementById('taskForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const urls = formData.get('bulk_urls');
+      const file = formData.get('bulk_file');
+      
+      if (!urls && !file) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Input Required',
+          text: 'Please enter URLs or upload a file!',
+          confirmButtonColor: '#4361ee'
+        });
+        return;
+      }
+      
+      Swal.fire({
+        title: 'Processing URLs',
+        html: 'Please wait while we add your URLs to the scraping queue...',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+          
+          // Submit the form after showing the loading alert
+          fetch(this.action, {
+            method: 'POST',
+            body: formData
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.count > 0) {
+              Swal.fire({
+                icon: 'success',
+                title: 'Tasks Added!',
+                text: `Successfully added ${data.count} URLs to the queue`,
+                confirmButtonColor: '#4361ee',
+                showConfirmButton: false,
+                timer: 2000
+              });
+            } else {
+              Swal.fire({
+                icon: 'info',
+                title: 'No New Tasks',
+                text: data.message,
+                confirmButtonColor: '#4361ee'
+              });
+            }
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
+            // Reset form
+            this.reset();
+            // Update dashboard
+            updateDashboard();
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Failed to add tasks. Please try again.',
+              confirmButtonColor: '#4361ee'
+            });
+          });
+        }
+      });
+    });
 
     async function updateDashboard() {
       try {
         const response = await fetch("/api/tasks");
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
         const tasks = await response.json();
 
-        // Update stats
-        document.getElementById('totalTasks').textContent = tasks.length;
-        document.getElementById('completedTasks').textContent = tasks.filter(t => t.status === 'completed').length;
-        document.getElementById('runningTasks').textContent = tasks.filter(t => t.status === 'running').length;
-        document.getElementById('failedTasks').textContent = tasks.filter(t => t.status === 'failed').length;
+        // Update stats with animation
+        updateCounter('totalTasks', tasks.length);
+        updateCounter('completedTasks', tasks.filter(t => t.status === 'completed').length);
+        updateCounter('runningTasks', tasks.filter(t => t.status === 'running').length);
+        updateCounter('failedTasks', tasks.filter(t => t.status === 'failed').length);
 
         // Update task list
         const taskList = document.getElementById('taskList');
         taskList.innerHTML = tasks.map(task => `
-          <div class="list-group-item task-card ${task.status}">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
-                  <span class="status-badge bg-${task.status}">${task.status}</span>
-                  <small class="text-muted">${new Date(task.created_at).toLocaleString()}</small>
-                </div>
-                <div class="text-break">${task.url}</div>
-              </div>
+          <tr class="task-card ${task.status}" onclick="showTaskDetail('${task.id}')" style="cursor: pointer;">
+            <td>
+              <span class="status-badge bg-${task.status}">${task.status}</span>
+            </td>
+            <td class="text-break">${task.url}</td>
+            <td>
+              <small class="text-muted">${new Date(task.created_at).toLocaleString()}</small>
+            </td>
+            <td>
               ${task.status_code ? `<span class="badge bg-secondary">${task.status_code}</span>` : ''}
-            </div>
-          </div>
+            </td>
+          </tr>
         `).join('');
 
         // Update Scraped Data List
@@ -175,18 +529,46 @@
                data-task-id="${task.id}"
                onclick="showScrapedContent('${encodeURIComponent(task.raw_html).replace(/'/g, "\\'")}', ${task.id})">
             <div class="d-flex justify-content-between align-items-center">
-              <div>
+              <div class="text-truncate" style="max-width: 80%;">
                 <span class="badge bg-primary me-2">#${task.id}</span>
                 ${task.url}
               </div>
-              <small class="text-muted">${task.status}</small>
+              <small class="text-nowrap">${new Date(task.created_at).toLocaleTimeString()}</small>
             </div>
           </div>
         `).join('');
 
       } catch (error) {
         console.error("Dashboard update error:", error);
+        Toast.fire({
+          icon: 'error',
+          title: 'Failed to update dashboard'
+        });
       }
+    }
+
+    function updateCounter(elementId, targetNumber) {
+      const element = document.getElementById(elementId);
+      const currentNumber = parseInt(element.textContent) || 0;
+      
+      if (currentNumber !== targetNumber) {
+        // Add pulse animation
+        element.classList.add('pulse');
+        setTimeout(() => {
+          element.classList.remove('pulse');
+        }, 500);
+      }
+      
+      element.textContent = targetNumber;
+    }
+
+    function showTaskDetail(taskId) {
+      // This could be expanded to show more details in a modal
+      Toast.fire({
+        icon: 'info',
+        title: `Task ID: ${taskId}`,
+        text: 'Showing task details...'
+      });
     }
 
     function showScrapedContent(content, taskId) {
@@ -208,14 +590,33 @@
         
         // Update the selected task ID
         selectedTaskId = taskId;
+        
+        // Show success toast
+        Toast.fire({
+          icon: 'success',
+          title: 'Content loaded successfully'
+        });
       } catch (error) {
         console.error('Error showing content:', error);
+        Toast.fire({
+          icon: 'error',
+          title: 'Failed to load content'
+        });
       }
     }
 
-    // Update every 3 seconds
-    setInterval(updateDashboard, 3000);
-    updateDashboard();
+    // Show welcome message on first load
+    document.addEventListener('DOMContentLoaded', () => {
+      Toast.fire({
+        icon: 'info',
+        title: 'Dashboard initialized',
+        text: 'Loading your scraping tasks...'
+      });
+      updateDashboard();
+    });
+
+    // Update every 5 seconds
+    setInterval(updateDashboard, 5000);
   </script>
 </body>
 </html>
